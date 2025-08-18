@@ -4,11 +4,11 @@ const originalXHR = XMLHttpRequest.prototype.open;
 const jobCache = {};
 
 // Override XHR
-XMLHttpRequest.prototype.open = function (url) {
+XMLHttpRequest.prototype.open = function (method, url) {
   if (url && url.includes("voyager/api/jobs")) {
     this.addEventListener("readystatechange", function () {
       if (this.readyState === 4 && this.status === 200) {
-        // THe response is a Blob, so we need to convert it to JSON
+        // The response is a Blob, so we need to convert it to JSON
         this.response
           .text()
           .then((text) => JSON.parse(text))
@@ -110,23 +110,40 @@ function formatExpirationDate(timestamp) {
   }
 }
 
-function getExpirationColor(timestamp) {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffTime = date.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays < 0) {
-    return "#666"; // gray for expired
-  } else if (diffDays <= 3) {
-    return "#e05d44"; // red for urgent (3 days or less)
-  } else if (diffDays <= 7) {
-    return "#ff7961"; // orange for soon (4-7 days)
-  } else if (diffDays <= 14) {
-    return "#ffc107"; // yellow for moderate (8-14 days)
-  } else {
-    return "#00b759"; // green for plenty of time (15+ days)
+// Unified coloring function
+function getBadgeColors(type, value) {
+  if (type === "applies") {
+    if (value < 50) {
+      return { background: "#00b759", color: "white" }; // green
+    } else if (value < 100) {
+      return { background: "#ffc107", color: "black" }; // yellow
+    } else if (value < 500) {
+      return { background: "#ff7961", color: "white" }; // orange
+    } else {
+      return { background: "#e05d44", color: "white" }; // red
+    }
   }
+
+  if (type === "expires") {
+    const date = new Date(value);
+    const now = new Date();
+    const diffTime = date.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return { background: "#666", color: "white" }; // gray expired
+    } else if (diffDays <= 3) {
+      return { background: "#e05d44", color: "white" }; // urgent red
+    } else if (diffDays <= 7) {
+      return { background: "#ff7961", color: "white" }; // orange
+    } else if (diffDays <= 14) {
+      return { background: "#ffc107", color: "black" }; // yellow
+    } else {
+      return { background: "#00b759", color: "white" }; // green
+    }
+  }
+
+  return { background: "#666", color: "white" }; // fallback
 }
 
 function updateAppliesOnPage(appliesCount, viewsCount, expiresAt) {
@@ -147,7 +164,7 @@ function updateAppliesOnPage(appliesCount, viewsCount, expiresAt) {
     if (existingApplies) existingApplies.remove();
     if (existingExpires) existingExpires.remove();
 
-    // Create views div (if views data exists)
+    // Create views div (static gray badge)
     if (viewsCount) {
       const viewsDiv = document.createElement("div");
       viewsDiv.className = "custom-views-count";
@@ -168,25 +185,13 @@ function updateAppliesOnPage(appliesCount, viewsCount, expiresAt) {
     }
 
     // Create applies div
-    const customDiv = document.createElement("div");
-    customDiv.className = "custom-applies-count";
+    const appliesDiv = document.createElement("div");
+    appliesDiv.className = "custom-applies-count";
 
-    let backgrondColor;
-    let textColor = "white";
-    if (appliesCount < 50) {
-      backgrondColor = "#00b759"; // green
-    } else if (appliesCount < 100) {
-      backgrondColor = "#ffc107"; // yellow
-      textColor = "black";
-    } else if (appliesCount < 500) {
-      backgrondColor = "#ff7961"; // orange
-    } else {
-      backgrondColor = "#e05d44"; // red
-    }
-
-    customDiv.style.cssText = `
-      background: ${backgrondColor};
-      color: ${textColor};
+    const appliesColors = getBadgeColors("applies", appliesCount);
+    appliesDiv.style.cssText = `
+      background: ${appliesColors.background};
+      color: ${appliesColors.color};
       padding: 6px 12px;
       border-radius: 16px;
       font-weight: bold;
@@ -196,22 +201,20 @@ function updateAppliesOnPage(appliesCount, viewsCount, expiresAt) {
       width: fit-content;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     `;
-    customDiv.textContent = `${appliesCount} applications`;
+    appliesDiv.textContent = `${appliesCount} applications`;
+    container.appendChild(appliesDiv);
 
-    // Append it to the container
-    container.appendChild(customDiv);
-
-    // Create expires div (if expires data exists)
+    // Create expires div
     if (expiresAt) {
       const expiresDiv = document.createElement("div");
       expiresDiv.className = "custom-expires-count";
 
-      const expiresColor = getExpirationColor(expiresAt);
+      const expiresColors = getBadgeColors("expires", expiresAt);
       const expiresText = formatExpirationDate(expiresAt);
 
       expiresDiv.style.cssText = `
-        background: ${expiresColor};
-        color: white;
+        background: ${expiresColors.background};
+        color: ${expiresColors.color};
         padding: 6px 12px;
         border-radius: 16px;
         font-weight: bold;
