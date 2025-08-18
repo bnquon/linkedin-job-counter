@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Job Counter",
+  "version": "1.0",
+  "description": "Shows job application counts on LinkedIn",
+  "permissions": [],
+  "content_scripts": [
+    {
+      "matches": ["*://www.linkedin.com/*"],
+      "js": ["simple.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}
