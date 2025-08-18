@@ -1,72 +1,43 @@
-const originalXHR = XMLHttpRequest.prototype.open;
-
-// Session cache for storing job data by job ID because there's no refetch on already viewed jobs
 const jobCache = {};
 
-// Override XHR
-XMLHttpRequest.prototype.open = function (method, url) {
-  if (url && url.includes("voyager/api/jobs")) {
-    this.addEventListener("readystatechange", function () {
-      if (this.readyState === 4 && this.status === 200) {
-        // The response is a Blob, so we need to convert it to JSON
-        this.response
-          .text()
-          .then((text) => JSON.parse(text))
-          .then((data) => {
-            const jobId = data.data.jobPostingId;
-            const appliesCount = data.data.applies;
-            const viewsCount = data.data.views;
-            const expireAt = data.data.expireAt;
+// Listen for messages from the injected scripts
+window.addEventListener("message", function (event) {
+  if (event.source !== window) return;
 
-            if (jobId && appliesCount && viewsCount && expireAt) {
-              // Cache the job data
-              jobCache[jobId] = {
-                applies: appliesCount,
-                views: viewsCount,
-                expireAt: expireAt,
-              };
+  if (event.data.type === "LINKEDIN_JOB_DATA") {
+    const { jobId, applies, views, expireAt } = event.data;
 
-              updateAppliesOnPage(appliesCount, viewsCount, expireAt);
-            }
-          })
-          .catch((e) => console.log("❌ Error:", e));
+    if (jobId && applies && views && expireAt) {
+      // Cache the job data
+      jobCache[jobId] = {
+        applies: applies,
+        views: views,
+        expireAt: expireAt,
+        analyticsSent: false,
+      };
+
+      if (chrome && chrome.runtime && chrome.runtime.sendMessage && !jobCache[jobId].analyticsSent) {
+        try {
+          chrome.runtime.sendMessage({ type: "update" });
+          jobCache[jobId].analyticsSent = true;
+        } catch (e) {
+          console.warn("Failed to send analytics message:", e);
+        }
       }
-    });
+
+      updateAppliesOnPage(applies, views, expireAt);
+    }
   }
-  return originalXHR.apply(this, arguments);
-};
 
-// Listen for URL changes using history API interception
-let lastUrl = window.location.href;
+  if (event.data.type === "LINKEDIN_URL_CHANGE") {
+    const currentUrl = event.data.url;
 
-// Override history methods
-const originalPushState = history.pushState;
-const originalReplaceState = history.replaceState;
-
-history.pushState = function () {
-  originalPushState.apply(history, arguments);
-  checkUrlChange();
-};
-
-history.replaceState = function () {
-  originalReplaceState.apply(history, arguments);
-  checkUrlChange();
-};
-
-// Listen for popstate (back/forward buttons)
-window.addEventListener("popstate", checkUrlChange);
-
-function checkUrlChange() {
-  const currentUrl = window.location.href;
-  if (currentUrl !== lastUrl) {
-    lastUrl = currentUrl;
-
-    // Extract job ID from URL (handles both /jobs/view/ and currentJobId= patterns)
+    // Extract job ID from URL
     const jobIdMatch = currentUrl.match(
       /(?:jobs\/view\/(\d+)|currentJobId=(\d+))/
     );
     if (jobIdMatch) {
-      const jobId = jobIdMatch[1] || jobIdMatch[2]; // Use whichever group matched
+      const jobId = jobIdMatch[1] || jobIdMatch[2];
 
       const existingViews = document.querySelector(".custom-views-count");
       const existingApplies = document.querySelector(".custom-applies-count");
@@ -85,7 +56,20 @@ function checkUrlChange() {
       }
     }
   }
+});
+
+function injectScript(src) {
+  const script = document.createElement("script");
+  script.src = chrome.runtime.getURL(src);
+  script.onload = function () {
+    this.remove();
+  };
+  (document.head || document.documentElement).appendChild(script);
 }
+
+// Inject both scripts
+injectScript("xhr-interceptor.js");
+injectScript("url-watcher.js");
 
 function formatExpirationDate(timestamp) {
   const date = new Date(timestamp);
@@ -110,7 +94,6 @@ function formatExpirationDate(timestamp) {
   }
 }
 
-// Unified coloring function
 function getBadgeColors(type, value) {
   if (type === "applies") {
     if (value < 50) {
