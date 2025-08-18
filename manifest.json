@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "LinkedIn Job Counter",
+  "name": "LinkedInLens",
   "version": "1.0",
-  "description": "Shows job application counts on LinkedIn",
+  "description": "Shows extra insight on LinkedIn job postings",
   "permissions": [],
   "content_scripts": [
     {
