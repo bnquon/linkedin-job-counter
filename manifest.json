@@ -7,7 +7,7 @@
   "content_scripts": [
     {
       "matches": ["*://www.linkedin.com/*"],
-      "js": ["simple.js"],
+      "js": ["extension.js"],
       "run_at": "document_start",
       "world": "MAIN"
     }
