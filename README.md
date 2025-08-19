@@ -1,0 +1,23 @@
+# LinkedInLens
+
+LinkedInLens is a Chrome extension that enhances LinkedIn job postings by showing additional insights such as job views, applications, and expiration dates. It helps users track and analyze job postings more effectively while browsing LinkedIn.
+
+## Features
+
+- Displays real-time views and application counts for LinkedIn jobs.
+- Shows job expiration information in a clear, easy-to-read format.
+- Implements a **CounterAPI** integration to track analytics on jobs viewed with the extension.
+- Uses injected scripts to intercept network requests and URL changes while keeping Chrome API calls and DOM manipulation safe in a content script.
+
+## Installation
+
+1. Clone this repository:
+
+   ```bash
+   git clone https://github.com/bnquon/linkedin-job-counter.git
+
+3. Open Chrome and go to `chrome://extensions`.
+4. Enable **Developer mode** in the top-right corner.
+5. Click **Load unpacked** and select the repository folder.
+
+OR wait for the extension to be approved on chrome :)
