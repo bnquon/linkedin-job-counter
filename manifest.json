@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "LinkedInLens",
+  "name": "Jobscura - Get Extra Insights on LinkedIn Job Postings",
   "version": "1.0",
   "description": "Shows extra insight on LinkedIn job postings",
   "permissions": [],
