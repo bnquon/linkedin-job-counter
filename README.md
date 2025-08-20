@@ -1,6 +1,7 @@
-# LinkedInLens
+# Jobscura
 
-LinkedInLens is a Chrome extension that enhances LinkedIn job postings by showing additional insights such as job views, applications, and expiration dates. It helps users track and analyze job postings more effectively while browsing LinkedIn.
+- ‘Obscura,’ famously used in camera obscura meaning ‘dark chamber,’ refers to an early device that projected hidden images with light.
+- Jobscura is a Chrome extension that enhances LinkedIn job postings by showing additional insights such as job views, applications, and expiration dates. It helps users track and analyze job postings more effectively while browsing LinkedIn.
 
 ## Example Image
 <img width="720" height="371" alt="image" src="https://github.com/user-attachments/assets/d5e837c0-caed-47da-b9e6-7dbd804d09a6" />
