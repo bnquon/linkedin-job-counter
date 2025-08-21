@@ -16,7 +16,12 @@ window.addEventListener("message", function (event) {
         analyticsSent: false,
       };
 
-      if (chrome && chrome.runtime && chrome.runtime.sendMessage && !jobCache[jobId].analyticsSent) {
+      if (
+        chrome &&
+        chrome.runtime &&
+        chrome.runtime.sendMessage &&
+        !jobCache[jobId].analyticsSent
+      ) {
         try {
           chrome.runtime.sendMessage({ type: "update" });
           jobCache[jobId].analyticsSent = true;
@@ -131,9 +136,20 @@ function getBadgeColors(type, value) {
 
 function updateAppliesOnPage(appliesCount, viewsCount, expiresAt) {
   // Target the parent container
-  const container = document.querySelector(
-    "#main > div > div.scaffold-layout__list-detail-inner.scaffold-layout__list-detail-inner--grow > div.scaffold-layout__detail.overflow-x-hidden.jobs-search__job-details > div > div.jobs-search__job-details--container > div > div.job-view-layout.jobs-details > div:nth-child(1) > div > div:nth-child(1) > div > div.relative.job-details-jobs-unified-top-card__container--two-pane > div > div.job-details-jobs-unified-top-card__primary-description-container"
-  );
+  const selectors = [
+    ".job-details-jobs-unified-top-card__primary-description-container",
+    ".jobs-unified-top-card__primary-description",
+    ".job-details-jobs-unified-top-card__content",
+    ".jobs-search__job-details",
+  ];
+
+  let container = null;
+  for (const selector of selectors) {
+    container = document.querySelector(selector);
+    if (container) {
+      break;
+    }
+  }
 
   if (container) {
     container.style.flexDirection = "column";
