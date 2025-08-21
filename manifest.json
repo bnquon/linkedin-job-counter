@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Jobscura - Get Extra Insights on LinkedIn Job Postings",
-  "version": "1.0",
+  "version": "1.01",
   "description": "Shows extra insight on LinkedIn job postings",
   "permissions": [],
   "host_permissions": ["https://api.counterapi.dev/*"],
