@@ -15,6 +15,10 @@
 
 ## Installation
 
+1. Download it on the chrome store :) [Link](https://chromewebstore.google.com/detail/hjdcfkenbmeglkiagaopohnficimablo?utm_source=item-share-cb)
+
+OR
+
 1. Clone this repository:
 
    ```bash
@@ -23,5 +27,3 @@
 3. Open Chrome and go to `chrome://extensions`.
 4. Enable **Developer mode** in the top-right corner.
 5. Click **Load unpacked** and select the repository folder.
-
-OR wait for the extension to be approved on chrome :)
