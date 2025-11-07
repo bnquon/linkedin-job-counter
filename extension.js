@@ -5,7 +5,7 @@ window.addEventListener("message", function (event) {
   if (event.source !== window) return;
 
   if (event.data.type === "LINKEDIN_JOB_DATA") {
-    const { jobId, applies, views, expireAt } = event.data;
+    const { jobId, applies, views, expireAt, isRemoteAllowed } = event.data;
 
     if (jobId && applies && views && expireAt) {
       // Cache the job data
@@ -14,6 +14,7 @@ window.addEventListener("message", function (event) {
         views: views,
         expireAt: expireAt,
         analyticsSent: false,
+        isRemoteAllowed: isRemoteAllowed,
       };
 
       if (
@@ -30,7 +31,7 @@ window.addEventListener("message", function (event) {
         }
       }
 
-      updateAppliesOnPage(applies, views, expireAt);
+      updateAppliesOnPage(applies, views, expireAt, isRemoteAllowed);
     }
   }
 
@@ -56,7 +57,8 @@ window.addEventListener("message", function (event) {
         updateAppliesOnPage(
           jobCache[jobId].applies,
           jobCache[jobId].views,
-          jobCache[jobId].expireAt
+          jobCache[jobId].expireAt,
+          jobCache[jobId].isRemoteAllowed
         );
       }
     }
@@ -72,9 +74,8 @@ function injectScript(src) {
   (document.head || document.documentElement).appendChild(script);
 }
 
-// Inject both scripts
-injectScript("xhr-interceptor.js");
-injectScript("url-watcher.js");
+// Inject the API fetcher script (replaces xhr-interceptor.js)
+injectScript("api-fetcher.js");
 
 function formatExpirationDate(timestamp) {
   const date = new Date(timestamp);
@@ -134,7 +135,7 @@ function getBadgeColors(type, value) {
   return { background: "#666", color: "white" }; // fallback
 }
 
-function updateAppliesOnPage(appliesCount, viewsCount, expiresAt) {
+function updateAppliesOnPage(appliesCount, viewsCount, expiresAt, isRemoteAllowed) {
   // Target the parent container
   const selectors = [
     ".job-details-jobs-unified-top-card__primary-description-container",
@@ -225,6 +226,27 @@ function updateAppliesOnPage(appliesCount, viewsCount, expiresAt) {
       `;
       expiresDiv.textContent = expiresText;
       container.appendChild(expiresDiv);
+    }
+
+    // Create remote allowed div
+    if (isRemoteAllowed) {
+      const remoteAllowedDiv = document.createElement("div");
+      remoteAllowedDiv.className = "custom-remote-allowed-count";
+      remoteAllowedDiv.textContent = "Remote allowed";
+      remoteAllowedDiv.style.cssText = `
+        background: #00b759;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-weight: bold;
+        font-size: 14px;
+        margin-top: 8px;
+        display: block;
+        width: fit-content;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      `;
+      remoteAllowedDiv.textContent = "Remote allowed";
+      container.appendChild(remoteAllowedDiv);
     }
   }
 }

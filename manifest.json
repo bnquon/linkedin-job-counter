@@ -4,7 +4,6 @@
   "version": "1.01",
   "description": "Shows extra insight on LinkedIn job postings",
   "permissions": [],
-  "host_permissions": ["https://api.counterapi.dev/*"],
   "content_scripts": [
     {
       "matches": ["*://www.linkedin.com/*"],
@@ -15,8 +14,11 @@
   "background": { "service_worker": "background.js" },
   "web_accessible_resources": [
     {
-      "resources": ["xhr-interceptor.js", "url-watcher.js"],
+      "resources": ["api-fetcher.js"],
       "matches": ["*://www.linkedin.com/*"]
     }
+  ],
+  "host_permissions": [
+    "https://www.linkedin.com/*"
   ]
 }
