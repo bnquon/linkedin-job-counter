@@ -22,7 +22,13 @@ async function fetchJobStats() {
   try {
     const jobId = getJobIDFromURL();
     if (!jobId) {
-      console.log('[Jobscura] No job ID found in URL');
+      return;
+    }
+
+    // Check if CSRF token is available - if not, page might not be ready
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+      // Silently return - page might not be ready yet
       return;
     }
 
@@ -30,15 +36,9 @@ async function fetchJobStats() {
     
     const headers = {
       'Accept': 'application/vnd.linkedin.normalized+json+2.1',
-      'x-restli-protocol-version': '2.0.0'
+      'x-restli-protocol-version': '2.0.0',
+      'csrf-token': csrfToken
     };
-
-    const csrfToken = getCsrfToken();
-    if (csrfToken) {
-      headers['csrf-token'] = csrfToken;
-    } else {
-      console.warn('[Jobscura] CSRF token not found, API call may fail');
-    }
 
     const response = await fetch(apiUrl, {
       headers: headers,
@@ -57,6 +57,8 @@ async function fetchJobStats() {
       const viewsCount = data.data.views;
       const expireAt = data.data.expireAt;
       const isRemoteAllowed = data.data.workRemoteAllowed
+
+      console.log(data.data);
 
       if (jobId && appliesCount !== undefined && viewsCount !== undefined && expireAt) {
         // Send data to content script
@@ -84,18 +86,39 @@ async function fetchJobStats() {
 
 // Watch for URL changes and fetch job stats when on a job page
 let lastUrl = window.location.href;
+let fetchTimeout = null;
 
 function checkUrlAndFetch() {
   const currentUrl = window.location.href;
   if (currentUrl !== lastUrl) {
     lastUrl = currentUrl;
     
-    // Small delay to ensure page is ready
-    setTimeout(() => {
-      if (getJobIDFromURL()) {
-        fetchJobStats();
-      }
-    }, 500);
+    // Clear any pending fetch
+    if (fetchTimeout) {
+      clearTimeout(fetchTimeout);
+    }
+    
+    // Wait for page to be ready before fetching
+    if (getJobIDFromURL()) {
+      // Wait for DOM to be ready and check if job container exists
+      fetchTimeout = setTimeout(() => {
+        // Check if the job details container exists (page is loaded)
+        const jobContainer = document.querySelector('.job-details-jobs-unified-top-card__primary-description-container') ||
+                            document.querySelector('.jobs-unified-top-card__primary-description') ||
+                            document.querySelector('.job-details-jobs-unified-top-card__content');
+        
+        if (jobContainer || document.readyState === 'complete') {
+          fetchJobStats();
+        } else {
+          // If container not found, wait a bit more and try again
+          fetchTimeout = setTimeout(() => {
+            if (getJobIDFromURL()) {
+              fetchJobStats();
+            }
+          }, 1000);
+        }
+      }, 1000);
+    }
   }
 }
 
@@ -115,22 +138,48 @@ history.replaceState = function () {
 
 window.addEventListener('popstate', checkUrlAndFetch);
 
-// Also use MutationObserver as a fallback (like the example code)
+// Use MutationObserver to detect URL changes (LinkedIn uses client-side navigation)
 const observer = new MutationObserver(() => {
-  checkUrlAndFetch();
+  const currentUrl = window.location.href;
+  if (currentUrl !== lastUrl) {
+    checkUrlAndFetch();
+  }
 });
 
-observer.observe(document, { subtree: true, childList: true });
+// Only observe after page is loaded
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', () => {
+    observer.observe(document, { subtree: true, childList: true });
+  });
+} else {
+  observer.observe(document, { subtree: true, childList: true });
+}
 
-// Initial fetch if already on a job page
+// Initial fetch if already on a job page - wait for page to be fully loaded
 if (getJobIDFromURL()) {
-  // Wait for page to be ready
   if (document.readyState === 'loading') {
     window.addEventListener('load', () => {
-      setTimeout(fetchJobStats, 1000);
+      setTimeout(() => {
+        const jobContainer = document.querySelector('.job-details-jobs-unified-top-card__primary-description-container') ||
+                            document.querySelector('.jobs-unified-top-card__primary-description');
+        if (jobContainer) {
+          fetchJobStats();
+        } else {
+          // Wait a bit more if container not ready
+          setTimeout(fetchJobStats, 1000);
+        }
+      }, 500);
     });
-  } else {
-    setTimeout(fetchJobStats, 1000);
+  } else if (document.readyState === 'complete') {
+    setTimeout(() => {
+      const jobContainer = document.querySelector('.job-details-jobs-unified-top-card__primary-description-container') ||
+                          document.querySelector('.jobs-unified-top-card__primary-description');
+      if (jobContainer) {
+        fetchJobStats();
+      } else {
+        setTimeout(fetchJobStats, 1000);
+      }
+    }, 500);
   }
 }
 
