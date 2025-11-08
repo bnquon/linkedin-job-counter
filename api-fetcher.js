@@ -56,9 +56,7 @@ async function fetchJobStats() {
       const appliesCount = data.data.applies;
       const viewsCount = data.data.views;
       const expireAt = data.data.expireAt;
-      const isRemoteAllowed = data.data.workRemoteAllowed
-
-      console.log(data.data);
+      const isRemoteAllowed = data.data.workRemoteAllowed;
 
       if (jobId && appliesCount !== undefined && viewsCount !== undefined && expireAt) {
         // Send data to content script
@@ -87,15 +85,18 @@ async function fetchJobStats() {
 // Watch for URL changes and fetch job stats when on a job page
 let lastUrl = window.location.href;
 let fetchTimeout = null;
+let isFetching = false;
 
 function checkUrlAndFetch() {
   const currentUrl = window.location.href;
   if (currentUrl !== lastUrl) {
     lastUrl = currentUrl;
+    isFetching = false; // Reset fetching flag on URL change
     
     // Clear any pending fetch
     if (fetchTimeout) {
       clearTimeout(fetchTimeout);
+      fetchTimeout = null;
     }
     
     // Wait for page to be ready before fetching
@@ -108,12 +109,20 @@ function checkUrlAndFetch() {
                             document.querySelector('.job-details-jobs-unified-top-card__content');
         
         if (jobContainer || document.readyState === 'complete') {
-          fetchJobStats();
+          if (!isFetching) {
+            isFetching = true;
+            fetchJobStats().finally(() => {
+              isFetching = false;
+            });
+          }
         } else {
           // If container not found, wait a bit more and try again
           fetchTimeout = setTimeout(() => {
-            if (getJobIDFromURL()) {
-              fetchJobStats();
+            if (getJobIDFromURL() && !isFetching) {
+              isFetching = true;
+              fetchJobStats().finally(() => {
+                isFetching = false;
+              });
             }
           }, 1000);
         }
@@ -157,29 +166,27 @@ if (document.readyState === 'loading') {
 
 // Initial fetch if already on a job page - wait for page to be fully loaded
 if (getJobIDFromURL()) {
+  const initialFetch = () => {
+    if (isFetching) return;
+    
+    const jobContainer = document.querySelector('.job-details-jobs-unified-top-card__primary-description-container') ||
+                        document.querySelector('.jobs-unified-top-card__primary-description');
+    if (jobContainer || document.readyState === 'complete') {
+      isFetching = true;
+      fetchJobStats().finally(() => {
+        isFetching = false;
+      });
+    } else {
+      setTimeout(initialFetch, 500);
+    }
+  };
+
   if (document.readyState === 'loading') {
     window.addEventListener('load', () => {
-      setTimeout(() => {
-        const jobContainer = document.querySelector('.job-details-jobs-unified-top-card__primary-description-container') ||
-                            document.querySelector('.jobs-unified-top-card__primary-description');
-        if (jobContainer) {
-          fetchJobStats();
-        } else {
-          // Wait a bit more if container not ready
-          setTimeout(fetchJobStats, 1000);
-        }
-      }, 500);
+      setTimeout(initialFetch, 500);
     });
-  } else if (document.readyState === 'complete') {
-    setTimeout(() => {
-      const jobContainer = document.querySelector('.job-details-jobs-unified-top-card__primary-description-container') ||
-                          document.querySelector('.jobs-unified-top-card__primary-description');
-      if (jobContainer) {
-        fetchJobStats();
-      } else {
-        setTimeout(fetchJobStats, 1000);
-      }
-    }, 500);
+  } else {
+    setTimeout(initialFetch, 500);
   }
 }
 

@@ -45,14 +45,9 @@ window.addEventListener("message", function (event) {
     if (jobIdMatch) {
       const jobId = jobIdMatch[1] || jobIdMatch[2];
 
-      const existingViews = document.querySelector(".custom-views-count");
-      const existingApplies = document.querySelector(".custom-applies-count");
-      const existingExpires = document.querySelector(".custom-expires-count");
-      const existingRemote = document.querySelector(".custom-remote-allowed");
-      if (existingViews) existingViews.remove();
-      if (existingApplies) existingApplies.remove();
-      if (existingExpires) existingExpires.remove();
-      if (existingRemote) existingRemote.remove();
+      // Remove all custom divs (handled by updateAppliesOnPage, but clean up here too)
+      document.querySelectorAll(".custom-views-count, .custom-applies-count, .custom-expires-count, .custom-remote-allowed")
+        .forEach(el => el.remove());
 
       // Check cache for this job
       if (jobCache[jobId]) {
@@ -138,6 +133,18 @@ function getBadgeColors(type, value) {
 }
 
 function updateAppliesOnPage(appliesCount, viewsCount, expiresAt, isRemoteAllowed) {
+  // Remove all existing custom divs from the entire document first
+  // This ensures we don't have duplicates even if container changes
+  const existingViews = document.querySelectorAll(".custom-views-count");
+  const existingApplies = document.querySelectorAll(".custom-applies-count");
+  const existingExpires = document.querySelectorAll(".custom-expires-count");
+  const existingRemote = document.querySelectorAll(".custom-remote-allowed");
+  
+  existingViews.forEach(el => el.remove());
+  existingApplies.forEach(el => el.remove());
+  existingExpires.forEach(el => el.remove());
+  existingRemote.forEach(el => el.remove());
+
   // Target the parent container
   const selectors = [
     ".job-details-jobs-unified-top-card__primary-description-container",
@@ -157,16 +164,6 @@ function updateAppliesOnPage(appliesCount, viewsCount, expiresAt, isRemoteAllowe
   if (container) {
     container.style.flexDirection = "column";
     container.style.alignItems = "flex-start";
-
-    // Remove existing custom divs
-    const existingViews = container.querySelector(".custom-views-count");
-    const existingApplies = container.querySelector(".custom-applies-count");
-    const existingExpires = container.querySelector(".custom-expires-count");
-    const existingRemote = container.querySelector(".custom-remote-allowed");
-    if (existingViews) existingViews.remove();
-    if (existingApplies) existingApplies.remove();
-    if (existingExpires) existingExpires.remove();
-    if (existingRemote) existingRemote.remove();
 
     // Create views div (static gray badge)
     if (viewsCount) {
@@ -249,7 +246,7 @@ function updateAppliesOnPage(appliesCount, viewsCount, expiresAt, isRemoteAllowe
         width: fit-content;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       `;
-      remoteAllowedDiv.textContent = `Remote allowed: ${isRemoteAllowed}`;
+      remoteAllowedDiv.textContent = isRemoteAllowed ? "Primarily Remote" : "Primarily On-Site";
       container.appendChild(remoteAllowedDiv);
     }
   }
