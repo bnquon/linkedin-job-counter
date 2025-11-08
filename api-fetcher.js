@@ -93,6 +93,15 @@ function checkUrlAndFetch() {
     lastUrl = currentUrl;
     isFetching = false; // Reset fetching flag on URL change
     
+    // Notify content script of URL change so it can show loading state
+    window.postMessage(
+      {
+        type: 'LINKEDIN_URL_CHANGE',
+        url: currentUrl,
+      },
+      '*'
+    );
+    
     // Clear any pending fetch
     if (fetchTimeout) {
       clearTimeout(fetchTimeout);
