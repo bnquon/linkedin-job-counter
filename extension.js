@@ -48,9 +48,11 @@ window.addEventListener("message", function (event) {
       const existingViews = document.querySelector(".custom-views-count");
       const existingApplies = document.querySelector(".custom-applies-count");
       const existingExpires = document.querySelector(".custom-expires-count");
+      const existingRemote = document.querySelector(".custom-remote-allowed");
       if (existingViews) existingViews.remove();
       if (existingApplies) existingApplies.remove();
       if (existingExpires) existingExpires.remove();
+      if (existingRemote) existingRemote.remove();
 
       // Check cache for this job
       if (jobCache[jobId]) {
@@ -160,9 +162,11 @@ function updateAppliesOnPage(appliesCount, viewsCount, expiresAt, isRemoteAllowe
     const existingViews = container.querySelector(".custom-views-count");
     const existingApplies = container.querySelector(".custom-applies-count");
     const existingExpires = container.querySelector(".custom-expires-count");
+    const existingRemote = container.querySelector(".custom-remote-allowed");
     if (existingViews) existingViews.remove();
     if (existingApplies) existingApplies.remove();
     if (existingExpires) existingExpires.remove();
+    if (existingRemote) existingRemote.remove();
 
     // Create views div (static gray badge)
     if (viewsCount) {
@@ -229,12 +233,12 @@ function updateAppliesOnPage(appliesCount, viewsCount, expiresAt, isRemoteAllowe
     }
 
     // Create remote allowed div
-    if (isRemoteAllowed) {
+    if (isRemoteAllowed !== null && isRemoteAllowed !== undefined) {
       const remoteAllowedDiv = document.createElement("div");
-      remoteAllowedDiv.className = "custom-remote-allowed-count";
-      remoteAllowedDiv.textContent = "Remote allowed";
+      remoteAllowedDiv.className = "custom-remote-allowed";
+      const backgroundColor = isRemoteAllowed ? "#00b759" : "#e05d44";
       remoteAllowedDiv.style.cssText = `
-        background: #00b759;
+        background: ${backgroundColor};
         color: white;
         padding: 6px 12px;
         border-radius: 16px;
@@ -245,7 +249,7 @@ function updateAppliesOnPage(appliesCount, viewsCount, expiresAt, isRemoteAllowe
         width: fit-content;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       `;
-      remoteAllowedDiv.textContent = "Remote allowed";
+      remoteAllowedDiv.textContent = `Remote allowed: ${isRemoteAllowed}`;
       container.appendChild(remoteAllowedDiv);
     }
   }
