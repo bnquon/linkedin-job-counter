@@ -45,12 +45,13 @@ window.addEventListener("message", function (event) {
     if (jobIdMatch) {
       const jobId = jobIdMatch[1] || jobIdMatch[2];
 
-      // Show loading state immediately when navigating to a new job
-      showLoadingState();
+      // Clear all existing custom divs immediately when navigating to a new job
+      document.querySelectorAll(".custom-views-count, .custom-applies-count, .custom-expires-count, .custom-remote-allowed")
+        .forEach(el => el.remove());
 
       // Check cache for this job
       if (jobCache[jobId]) {
-        // Small delay to ensure loading state is visible
+        // Small delay to ensure DOM is ready
         setTimeout(() => {
           updateAppliesOnPage(
             jobCache[jobId].applies,
@@ -60,10 +61,10 @@ window.addEventListener("message", function (event) {
           );
         }, 100);
       }
-      // If not in cache, loading state will remain until API call completes
+      // If not in cache, DOM is already cleared and will be populated when API call completes
     } else {
       // Not a job page, remove all custom elements
-      document.querySelectorAll(".custom-views-count, .custom-applies-count, .custom-expires-count, .custom-remote-allowed, .custom-loading-indicator")
+      document.querySelectorAll(".custom-views-count, .custom-applies-count, .custom-expires-count, .custom-remote-allowed")
         .forEach(el => el.remove());
     }
   }
@@ -80,29 +81,6 @@ function injectScript(src) {
 
 // Inject the API fetcher script (replaces xhr-interceptor.js)
 injectScript("api-fetcher.js");
-
-// Show loading state on initial page load if we're on a job page
-function checkInitialJobPage() {
-  const url = window.location.href;
-  const jobIdMatch = url.match(/(?:jobs\/view\/(\d+)|currentJobId=(\d+))/);
-  if (jobIdMatch) {
-    const jobId = jobIdMatch[1] || jobIdMatch[2];
-    // Only show loading if not in cache (meaning we need to fetch)
-    if (!jobCache[jobId]) {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        showLoadingState();
-      }, 100);
-    }
-  }
-}
-
-// Check on page load
-if (document.readyState === 'loading') {
-  window.addEventListener('DOMContentLoaded', checkInitialJobPage);
-} else {
-  checkInitialJobPage();
-}
 
 function formatExpirationDate(timestamp) {
   const date = new Date(timestamp);
@@ -162,74 +140,10 @@ function getBadgeColors(type, value) {
   return { background: "#666", color: "white" }; // fallback
 }
 
-function showLoadingState() {
-  // Remove all existing custom divs and loading indicators
-  document.querySelectorAll(".custom-views-count, .custom-applies-count, .custom-expires-count, .custom-remote-allowed, .custom-loading-indicator")
-    .forEach(el => el.remove());
-
-  // Find container
-  const selectors = [
-    ".job-details-jobs-unified-top-card__primary-description-container",
-    ".jobs-unified-top-card__primary-description",
-    ".job-details-jobs-unified-top-card__content",
-    ".jobs-search__job-details",
-  ];
-
-  let container = null;
-  for (const selector of selectors) {
-    container = document.querySelector(selector);
-    if (container) {
-      break;
-    }
-  }
-
-  if (container) {
-    container.style.flexDirection = "column";
-    container.style.alignItems = "flex-start";
-
-    // Create loading indicator with animation
-    const loadingDiv = document.createElement("div");
-    loadingDiv.className = "custom-loading-indicator";
-    loadingDiv.style.cssText = `
-      background: #666;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 16px;
-      font-weight: bold;
-      font-size: 14px;
-      margin-top: 8px;
-      display: block;
-      width: fit-content;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      opacity: 0.8;
-      position: relative;
-    `;
-    loadingDiv.innerHTML = `
-      <span style="display: inline-block; animation: pulse 1.5s ease-in-out infinite;">⏳</span>
-      Loading job stats...
-    `;
-    
-    // Add CSS animation if not already added
-    if (!document.getElementById('jobscura-loading-styles')) {
-      const style = document.createElement('style');
-      style.id = 'jobscura-loading-styles';
-      style.textContent = `
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(0.95); }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-    
-    container.appendChild(loadingDiv);
-  }
-}
-
 function updateAppliesOnPage(appliesCount, viewsCount, expiresAt, isRemoteAllowed) {
-  // Remove all existing custom divs and loading indicators from the entire document first
+  // Remove all existing custom divs from the entire document first
   // This ensures we don't have duplicates even if container changes
-  document.querySelectorAll(".custom-views-count, .custom-applies-count, .custom-expires-count, .custom-remote-allowed, .custom-loading-indicator")
+  document.querySelectorAll(".custom-views-count, .custom-applies-count, .custom-expires-count, .custom-remote-allowed")
     .forEach(el => el.remove());
 
   // Target the parent container
